@@ -6,13 +6,13 @@ const ejs = require('ejs')
 const host = 'localhost'
 const port = 3320
 const baseUrl = `http://${host}:${port}`
-const { get, get$ } = require('./request-helpers')({baseUrl})
+const { get, get$ } = require('expect-request-helpers')({baseUrl})
 
 const serverRenderReact = require('../src')
 
 const g = (path, cb) => [path, cb]
 
-test('web server', t => {
+test('expect-server-render-react', t => {
   t.test('res.renderReact', t => {
     const start = ({ route, middlewareOpts = {} }) => new Promise((resolve, reject) => {
       const app = express()
