@@ -18,7 +18,9 @@ const defaultTemplate = `<!doctype html>
   </script>
 </head>
 <body>
-  <div id="<%- rootDOMId %>"><%- HTML %></div>
+  <div id="<%- rootDOMId %>">
+    <%- HTML %>
+  </div>
   <% if (typeof(dontLoadJS) === 'boolean' && !dontLoadJS) { %><script src='<%- jsSrc %>' id='browser-bundle' type='text/javascript' charset='utf-8'></script><% } %>
 </body>
 </html>`
