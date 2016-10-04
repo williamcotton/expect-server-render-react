@@ -89,11 +89,13 @@ test('expect-server-render-react', t => {
     })
 
     t.test('should render beautified HTML with shouldbeautifyHTML', t => {
+      const template = '<div id="<%- rootDOMId %>"><%- HTML %></div>'
+
       const route = g('/', (req, res) => res.renderReact(component))
-      const middlewareOpts = { shouldbeautifyHTML: true, beautifyHTMLOptions: { indent_with_tabs: true } }
+      const middlewareOpts = { shouldbeautifyHTML: true, beautifyHTMLOptions: { indent_with_tabs: true }, template }
 
       start({ route, middlewareOpts }).then(({server, get}) => get('/')
-        .then(body => t.equal(body, '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width">\n  <title></title>\n  <link href="/build.css" rel="stylesheet" type="text/css">\n  <script id=\'window-environment\' type="text/javascript">\n    window.environment = {"defaultTitle":""}\n  </script>\n</head>\n<body>\n  <div id="root"><div class="app-container">\n\t<h1>test</h1>\n</div></div>\n  <script src=\'/build.js\' id=\'browser-bundle\' type=\'text/javascript\' charset=\'utf-8\'></script>\n</body>\n</html>', 'should have beautified HTML'))
+        .then(body => t.equal(body, '<div id="root"><div class="app-container">\n\t<h1>test</h1>\n</div></div>', 'should have beautified HTML'))
         .then(() => server.close())
         .then(() => t.end()))
     })
