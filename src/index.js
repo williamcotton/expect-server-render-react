@@ -2,32 +2,9 @@ const async = require('async')
 const queryString = require('query-string')
 const React = require('react')
 const ReactDOMServer = require('react-dom/server')
+const createForm = require('expect-react-form')
+const beautifyHTML = require('js-beautify').html
 const ejs = require('ejs')
-
-let middlewareStack = []
-
-const createForm = (req, res) => {
-  var Form = React.createClass({
-    propTypes: {
-      action: React.PropTypes.string,
-      method: React.PropTypes.string,
-      encType: React.PropTypes.string,
-      children: React.PropTypes.array
-    },
-    render: function () {
-      const encType = this.props.encType || ''
-      const action = encType === 'multipart/form-data' && req.csrf ? this.props.action + '?_csrf=' + req.csrf : this.props.action
-      const method = this.props.method
-
-      let formChildren = []
-      if (req.csrf) formChildren.push(React.createElement('input', { type: 'hidden', name: '_csrf', value: req.csrf }))
-      formChildren.push(this.props.children)
-
-      return React.createElement('form', { action, method, encType, className: this.props.className }, formChildren)
-    }
-  })
-  return Form
-}
 
 const defaultTemplate = `<!doctype html>
 <html lang="en">
@@ -46,9 +23,11 @@ const defaultTemplate = `<!doctype html>
 </body>
 </html>`
 
+let middlewareStack = []
+
 const defaultFormatTitle = function (defaultTitle, title) { return defaultTitle + (title ? ' - ' + title : '') }
 
-let serverRenderReact = ({ RootComponent, template = defaultTemplate, formatTitle = defaultFormatTitle, defaultTitle = '', rootDOMId = 'root', dontLoadJS = false, cssHref = '/build.css', jsSrc = '/build.js' }) => {
+let serverRenderReact = ({ RootComponent, template = defaultTemplate, formatTitle = defaultFormatTitle, defaultTitle = '', rootDOMId = 'root', dontLoadJS = false, cssHref = '/build.css', jsSrc = '/build.js', shouldbeautifyHTML = false, beautifyHTMLOptions = {} }) => {
   RootComponent = RootComponent
     ? React.createFactory(RootComponent)
     : React.createClass({propTypes: { content: React.PropTypes.element }, render: function () { return React.createElement('div', {className: 'app-container'}, this.props.content) }})
@@ -80,7 +59,8 @@ let serverRenderReact = ({ RootComponent, template = defaultTemplate, formatTitl
           : React.cloneElement(content, contentProps)
         rootProps.content = contentWithProps
         rootProps.opts = opts
-        const HTML = ReactDOMServer.renderToStaticMarkup(React.createElement(RootComponent, rootProps))
+        const rawHTML = ReactDOMServer.renderToStaticMarkup(React.createElement(RootComponent, rootProps))
+        const HTML = shouldbeautifyHTML ? beautifyHTML(rawHTML, beautifyHTMLOptions) : rawHTML
         const renderedTemplate = ejs.render(template, { HTML, title, rootDOMId, environment: res.environment, dontLoadJS, cssHref, jsSrc })
         res.send(renderedTemplate)
       })

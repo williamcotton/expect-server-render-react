@@ -3,14 +3,14 @@ const React = require('react')
 const express = require('express')
 const ejs = require('ejs')
 
+const serverRenderReact = require('../src')
+
+const g = (path, cb) => [path, cb]
+
 const host = 'localhost'
 const port = 3320
 const baseUrl = `http://${host}:${port}`
 const { get, get$ } = require('expect-request-helpers')({baseUrl})
-
-const serverRenderReact = require('../src')
-
-const g = (path, cb) => [path, cb]
 
 test('expect-server-render-react', t => {
   t.test('res.renderReact', t => {
@@ -19,7 +19,7 @@ test('expect-server-render-react', t => {
       app.use(serverRenderReact(middlewareOpts))
       if (route) app.get.apply(app, route)
       const server = app.listen(port)
-      resolve(server)
+      resolve({server, get$, get})
     })
 
     const innerHTML = 'test'
@@ -29,7 +29,7 @@ test('expect-server-render-react', t => {
     t.test('should render component with correct elementType and innerHTML', t => {
       const route = g('/', (req, res) => res.renderReact(component))
 
-      start({ route }).then(server => get$('/')
+      start({ route }).then(({server, get$}) => get$('/')
         .then($ => t.equal($(elementType).text(), innerHTML, 'should have equal component'))
         .then(() => server.close())
         .then(() => t.end()))
@@ -39,7 +39,7 @@ test('expect-server-render-react', t => {
       const route = g('/', (req, res) => res.renderReact(component))
       const middlewareOpts = { defaultTitle: 'test-title' }
 
-      start({ route, middlewareOpts }).then(server => get$('/')
+      start({ route, middlewareOpts }).then(({server, get$}) => get$('/')
         .then($ => t.equal($('title').text(), middlewareOpts.defaultTitle, 'should have equal title'))
         .then(() => server.close())
         .then(() => t.end()))
@@ -51,7 +51,7 @@ test('expect-server-render-react', t => {
       const route = g('/', (req, res) => res.renderReact(component, { title }))
       const middlewareOpts = { defaultTitle: 'test-title' }
 
-      start({ route, middlewareOpts }).then(server => get$('/')
+      start({ route, middlewareOpts }).then(({server, get$}) => get$('/')
         .then($ => t.equal($('title').text(), `${middlewareOpts.defaultTitle} - ${title}`, 'should have properly formatted title and sub-title'))
         .then(() => server.close())
         .then(() => t.end()))
@@ -64,7 +64,7 @@ test('expect-server-render-react', t => {
       const route = g('/', (req, res) => res.renderReact(component))
       const middlewareOpts = { jsSrc, cssHref }
 
-      start({ route, middlewareOpts }).then(server => get$('/')
+      start({ route, middlewareOpts }).then(({server, get$}) => get$('/')
         .then($ => {
           t.equal($('link').attr('href'), cssHref, 'should have equal cssHref')
           t.equal($('script#browser-bundle').attr('src'), jsSrc, 'should have equal jsSrc')
@@ -82,8 +82,18 @@ test('expect-server-render-react', t => {
       const route = g('/', (req, res) => res.renderReact(component))
       const middlewareOpts = { template, rootDOMId, RootComponent }
 
-      start({ route, middlewareOpts }).then(server => get('/')
+      start({ route, middlewareOpts }).then(({server, get}) => get('/')
         .then(body => t.equal(body, ejs.render(template, { HTML, rootDOMId }), 'should have correct template'))
+        .then(() => server.close())
+        .then(() => t.end()))
+    })
+
+    t.test('should render beautified HTML with shouldbeautifyHTML', t => {
+      const route = g('/', (req, res) => res.renderReact(component))
+      const middlewareOpts = { shouldbeautifyHTML: true, beautifyHTMLOptions: { indent_with_tabs: true } }
+
+      start({ route, middlewareOpts }).then(({server, get}) => get('/')
+        .then(body => t.equal(body, '<!doctype html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width">\n  <title></title>\n  <link href="/build.css" rel="stylesheet" type="text/css">\n  <script id=\'window-environment\' type="text/javascript">\n    window.environment = {"defaultTitle":""}\n  </script>\n</head>\n<body>\n  <div id="root"><div class="app-container">\n\t<h1>test</h1>\n</div></div>\n  <script src=\'/build.js\' id=\'browser-bundle\' type=\'text/javascript\' charset=\'utf-8\'></script>\n</body>\n</html>', 'should have beautified HTML'))
         .then(() => server.close())
         .then(() => t.end()))
     })
@@ -97,7 +107,7 @@ test('expect-server-render-react', t => {
         res.renderReact(component)
       })
 
-      start({ route }).then(server => get$('/')
+      start({ route }).then(({server, get$}) => get$('/')
         .then($ => t.equal(JSON.parse($('script#window-environment').text().match(/window.environment = (.*)/)[1])[environmentVariableName], environmentVariableValue, 'should have res.environment data'))
         .then(() => server.close())
         .then(() => t.end()))
@@ -115,7 +125,7 @@ test('expect-server-render-react', t => {
 
       const route = g('/', (req, res) => res.renderReact(TestComponentBasic({ className, divContents })))
 
-      start({ route }).then(server => get$('/')
+      start({ route }).then(({server, get$}) => get$('/')
         .then($ => {
           t.equal($('#root').children().length, 1, 'should have equal root component')
           t.equal($('.' + className).text(), divContents, 'should have equal child component')
@@ -141,7 +151,7 @@ test('expect-server-render-react', t => {
 
       const route = g('/', (req, res) => res.renderReact(TestComponentForm({ className, action, method, defaultValue, encType })))
 
-      start({ route }).then(server => get$('/')
+      start({ route }).then(({server, get$}) => get$('/')
         .then($ => {
           t.equal($('form').attr('class'), className, 'should have equal class')
           t.equal($('form').attr('action'), action, 'should have equal action')
@@ -158,7 +168,7 @@ test('expect-server-render-react', t => {
 
       const route = g('/', (req, res) => res.renderReact(React.createElement(res.Form, { className })))
 
-      start({ route }).then(server => get$('/')
+      start({ route }).then(({server, get$}) => get$('/')
         .then($ => t.equal($('form').attr('class'), className, 'should have equal class'))
         .then(() => server.close())
         .then(() => t.end()))
@@ -182,10 +192,10 @@ test('expect-server-render-react', t => {
 
   //   const start = new Promise((resolve, reject) => {
   //     let server = app.listen(port)
-  //     resolve(server)
+  //     resolve({server, get$})
   //   })
 
-  //   start.then(server => get$('/')
+  //   start.then(({server, get$}) => get$('/')
   //     .then(() => {
   //       server.close()
   //     }))
@@ -221,7 +231,7 @@ test('expect-server-render-react', t => {
       app.use(serverRenderReact(middlewareOpts))
       if (route) app.get.apply(app, route)
       const server = app.listen(port)
-      resolve(server)
+      resolve({server, get$})
     })
 
     const TestComponentBasic = ({ className }) => React.createElement(React.createClass({
@@ -234,7 +244,7 @@ test('expect-server-render-react', t => {
 
     const route = g(path, (req, res) => res.renderReact(TestComponentBasic({ className })))
 
-    start({ route, middlewareOpts: {RootComponent} }).then(server => get$(path)
+    start({ route, middlewareOpts: {RootComponent} }).then(({server, get$}) => get$(path)
       .then($ => {
         t.equal($('.' + className).text(), path, 'should have equal req.path in child component')
       })
