@@ -4,16 +4,12 @@ const React = require('react')
 const ReactDOMServer = require('react-dom/server')
 const createForm = require('expect-react-form')
 const beautifyHTML = require('js-beautify').html
+const { asciiArt } = require('expect-art')
 const ejs = require('ejs')
 
 const defaultTemplate = `<!doctype html>
 <!--
-███████╗██╗  ██╗██████╗ ███████╗ ██████╗████████╗
-██╔════╝╚██╗██╔╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝
-█████╗   ╚███╔╝ ██████╔╝█████╗  ██║        ██║   
-██╔══╝   ██╔██╗ ██╔═══╝ ██╔══╝  ██║        ██║   
-███████╗██╔╝ ██╗██║     ███████╗╚██████╗   ██║   
-╚══════╝╚═╝  ╚═╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   
+${asciiArt}
 -->
 <html lang="en">
 <head>
